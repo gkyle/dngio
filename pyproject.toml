@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "pybind11>=2.10.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dngio"
+version = "1.0.0"
+description = "Python wrapper around Adobe DNG SDK for reading and writing DNG files"
+readme = "README.md"
+license = {text = "MIT"}
+keywords = ["dng"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Graphics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Operating System :: Microsoft :: Windows",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.19.0",
+    "pybind11>=3.0.1",
+    "setuptools>=75.3.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov",
+]
+test = [
+    "pytest>=6.0",
+    "numpy>=1.19.0",
+]
+
+[project.urls]
+Repository = "https://github.com/gkyle/dngio"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dngio = ["*.pyd", "*.so", "*.dylib", "py.typed"]
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2.post1",
+    "pytest>=8.3.5",
+    "pytest-cov>=5.0.0",
+]
