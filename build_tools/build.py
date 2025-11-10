@@ -12,7 +12,7 @@ from pathlib import Path
 
 def run_command(cmd, description, cwd=None):
     """Run a command and handle errors."""
-    print(f"\n🔧 {description}")
+    print(f"\n[BUILD] {description}")
     print(f"Command: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     
     try:
@@ -20,15 +20,15 @@ def run_command(cmd, description, cwd=None):
             result = subprocess.run(cmd, shell=True, check=True, cwd=cwd)
         else:
             result = subprocess.run(cmd, check=True, cwd=cwd)
-        print(f"✅ {description} completed successfully")
+        print(f"[SUCCESS] {description} completed successfully")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ {description} failed with return code {e.returncode}")
+        print(f"[ERROR] {description} failed with return code {e.returncode}")
         return False
 
 def main():
     """Main build process."""
-    print("🚀 DNG Python Module Build Script")
+    print("DNG Python Module Build Script")
     print("=" * 50)
     
     # Get paths
@@ -40,27 +40,41 @@ def main():
     print(f"Build tools directory: {build_tools_dir}")
     print(f"Source directory: {src_dir}")
     
-    # Step 1: Build dependencies
+    # Step 1: Build dependencies (Windows only for now)
     if sys.platform == "win32":
         deps_script = build_tools_dir / "build_dependencies.ps1"
         if deps_script.exists():
-            print("\n📦 Building dependencies...")
+            print("\n[STEP 1] Building dependencies...")
             success = run_command(
                 ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(deps_script)],
                 "Building external dependencies",
                 cwd=build_tools_dir
             )
             if not success:
-                print("❌ Dependency build failed. Cannot continue.")
+                print("[ERROR] Dependency build failed. Cannot continue.")
                 return False
         else:
-            print("⚠️  Warning: build_dependencies.ps1 not found. Assuming dependencies are already built.")
+            print("[WARNING] build_dependencies.ps1 not found. Assuming dependencies are already built.")
     else:
-        print("⚠️  Dependency building for Linux/macOS not implemented.")
+        if sys.platform == "darwin":  # macOS
+            deps_script = build_tools_dir / "build_dependencies_macos.sh"
+            if deps_script.exists():
+                print("[STEP 1] Building dependencies (macOS)...")
+                success = run_command(
+                    ["bash", str(deps_script)],
+                    "Building external dependencies (macOS)",
+                    cwd=build_tools_dir
+                )
+                if not success:
+                    print("[WARNING] macOS dependency build failed - this is expected as macOS support is not yet complete")
+            else:
+                print("[WARNING] build_dependencies_macos.sh not found")
+        else:
+            print("[WARNING] Dependency building for Linux not implemented yet.")
         print("   Please ensure all dependencies are available.")
     
     # Step 2: Build the Python extension
-    print("\n🔨 Building Python extension...")
+    print("\n[STEP 2] Building Python extension...")
     success = run_command(
         [sys.executable, "setup.py", "build_ext", "--inplace"],
         "Building Python extension",
@@ -70,7 +84,7 @@ def main():
         return False
     
     # Step 3: Copy built extension to src directory
-    print("\n📁 Copying built extension to source directory...")
+    print("\n[STEP 3] Copying built extension to source directory...")
     
     # Find the built extension file
     built_files = []
@@ -81,13 +95,13 @@ def main():
         for built_file in built_files:
             dest_file = src_dir / "dngio" / built_file.name
             shutil.copy2(built_file, dest_file)
-            print(f"✅ Copied {built_file.name} to {dest_file}")
+            print(f"[SUCCESS] Copied {built_file.name} to {dest_file}")
     else:
-        print("❌ No built extension files found!")
+        print("[ERROR] No built extension files found!")
         return False
     
     # Step 4: Build wheel
-    print("\n🎯 Building wheel...")
+    print("\n[STEP 4] Building wheel...")
     success = run_command(
         [sys.executable, "setup.py", "bdist_wheel"],
         "Building wheel",
@@ -105,9 +119,9 @@ def main():
         for wheel_file in build_dist_dir.glob("*.whl"):
             dest_wheel = wheels_dir / wheel_file.name
             shutil.copy2(wheel_file, dest_wheel)
-            print(f"✅ Copied wheel to {dest_wheel}")
+            print(f"[SUCCESS] Copied wheel to {dest_wheel}")
     
-    print("\n🎉 Build completed successfully!")
+    print("\n[COMPLETE] Build completed successfully!")
     print(f"Extension files are in: {src_dir / 'dngio'}")
     print(f"Wheel files are in: {wheels_dir}")
     
