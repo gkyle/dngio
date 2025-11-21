@@ -11,22 +11,13 @@ This is specifically designed for performing mutations on raw sensor data, then 
 
 | Platform | Architecture | Status |
 |----------|--------------|--------|
-| Windows  | AMD64        | ✅ Supported |
-| Windows  | ARM64        | ✅ Supported |
+| Windows  | AMD64/ARM64        | ✅ Supported |
+| macOS    | x86_64/ARM64 | ✅ Supported |
 | Linux    | x86_64       | ⏳ Not yet |
-| macOS    | x86_64/ARM64 | ⏳ Not yet |
 
 ## Installation
 
-### Option 1: Install from PyPI (Recommended)
-
-```bash
-pip install dngio
-```
-
-This will install pre-built binaries.
-
-### Option 2: Install from Wheels
+### Option 1: Install from Wheels
 
 Download the appropriate wheel for your platform from the [releases page](https://github.com/gkyle/dngio/releases):
 
@@ -34,7 +25,7 @@ Download the appropriate wheel for your platform from the [releases page](https:
 pip install dngio-1.0.0-cp39-cp39-win_amd64.whl
 ```
 
-### Option 3: Build from Source
+### Option 2: Build from Source
 
 ```powershell
 git clone https://github.com/gkyle/dngio.git
