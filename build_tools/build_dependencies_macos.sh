@@ -43,7 +43,7 @@ build_jpeg_xl() {
         mkdir -p build
         cd build
         
-        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DJPEGXL_ENABLE_TOOLS=OFF ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DJPEGXL_ENABLE_TOOLS=OFF -DBUILD_TESTING=OFF -DJPEGXL_ENABLE_SAMPLES=OFF -DJPEGXL_ENABLE_MANPAGES=OFF -DJPEGXL_ENABLE_BENCHMARK=OFF ..
         make -j$(sysctl -n hw.ncpu)
         echo "  ✓ JPEG XL built successfully"
     else
