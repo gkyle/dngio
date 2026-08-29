@@ -26,6 +26,72 @@ if not dng_sdk_sources:
     print(f"ERROR: No DNG SDK source files found in: {dng_sdk_source_dir}")
     raise RuntimeError("DNG SDK source files not found")
 
+# Auto-patch dng_memory.h for GCC/Clang C++ allocator compatibility
+dng_memory_h = os.path.join(dng_sdk_source_dir, "dng_memory.h")
+if os.path.exists(dng_memory_h):
+    with open(dng_memory_h, "r") as f:
+        dng_mem_content = f.read()
+
+    old_allocator_def = """template <typename T>
+class dng_std_allocator
+	{
+	
+	public:
+
+		typedef T value_type;
+		
+		#if defined(_MSC_VER) && _MSC_VER >= 1900
+
+		// Default implementations of default constructor and copy
+		// constructor.
+
+		dng_std_allocator () = default;
+
+		// dng_std_allocator (const dng_std_allocator &) = default;
+
+		template<class U> dng_std_allocator (const dng_std_allocator<U> &) {}
+		
+		#endif"""
+
+    new_allocator_def = """template <typename T>
+class dng_std_allocator
+	{
+	
+	public:
+
+		typedef T value_type;
+		typedef T* pointer;
+		typedef const T* const_pointer;
+		typedef T& reference;
+		typedef const T& const_reference;
+		typedef std::size_t size_type;
+		typedef std::ptrdiff_t difference_type;
+
+		template<class U> struct rebind { typedef dng_std_allocator<U> other; };
+
+		// Default implementations of default constructor and copy
+		// constructor.
+
+		dng_std_allocator () = default;
+
+		template<class U> dng_std_allocator (const dng_std_allocator<U> &) {}"""
+
+    if old_allocator_def in dng_mem_content:
+        print("Patching dng_memory.h for GCC/Clang C++ allocator compatibility...")
+        dng_mem_content = dng_mem_content.replace(old_allocator_def, new_allocator_def)
+        with open(dng_memory_h, "w") as f:
+            f.write(dng_mem_content)
+        print("✓ dng_memory.h successfully patched")
+    elif "#if defined(_MSC_VER) && _MSC_VER >= 1900" in dng_mem_content:
+        print("Patching dng_memory.h (fallback) for GCC/Clang compatibility...")
+        dng_mem_content = dng_mem_content.replace(
+            "#if defined(_MSC_VER) && _MSC_VER >= 1900",
+            "// #if defined(_MSC_VER) && _MSC_VER >= 1900"
+        )
+        with open(dng_memory_h, "w") as f:
+            f.write(dng_mem_content)
+        print("✓ dng_memory.h fallback patch applied")
+
 # Get libjpeg source files from DNG SDK
 libjpeg_source_dir = cache_dir + "/dng_sdk/dng_sdk_1_7_1/libjpeg/"
 libjpeg_sources = glob(os.path.join(libjpeg_source_dir, "*.c"))

@@ -24,6 +24,27 @@ if [ ! -d "$DNG_SDK_ROOT" ]; then
     echo "✓ Adobe DNG SDK extracted"
 fi
 
+# Patch dng_memory.h for GCC/Clang compatibility
+DNG_MEMORY_H="$DNG_SDK_ROOT/dng_sdk/source/dng_memory.h"
+if [ -f "$DNG_MEMORY_H" ]; then
+    echo "Checking dng_memory.h patch..."
+    PYTHON_BIN="${PYTHON:-$(which python3 2>/dev/null || which python 2>/dev/null || echo python)}"
+    "$PYTHON_BIN" -c "
+import os
+path = '$DNG_MEMORY_H'
+with open(path, 'r') as f:
+    c = f.read()
+old_str = '#if defined(_MSC_VER) && _MSC_VER >= 1900'
+if old_str in c:
+    c = c.replace(old_str, '// #if defined(_MSC_VER) && _MSC_VER >= 1900')
+    if 'typedef std::size_t size_type;' not in c:
+        c = c.replace('typedef T value_type;', 'typedef T value_type;\n\ttypedef T* pointer;\n\ttypedef const T* const_pointer;\n\ttypedef T& reference;\n\ttypedef const T& const_reference;\n\ttypedef std::size_t size_type;\n\ttypedef std::ptrdiff_t difference_type;\n\ttemplate<class U> struct rebind { typedef dng_std_allocator<U> other; };')
+    with open(path, 'w') as f:
+        f.write(c)
+    print('✓ dng_memory.h patched for GCC/Clang C++ allocator compatibility')
+" || true
+fi
+
 # Build JPEG XL dependencies
 build_jpeg_xl() {
     echo "Building JPEG XL dependencies..."
