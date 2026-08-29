@@ -249,24 +249,80 @@ elif is_macos:
         ])
 
 elif is_linux:
-    # Linux configuration - basic setup (dependencies need to be built separately)
-    print("Linux build configuration - dependencies must be built externally")
-    library_dirs.extend([
-        cache_dir + "/dng_sdk/dng_sdk_1_7_1/dng_sdk/projects/linux/x64/Release",
+    # Linux configuration
+    print("Linux build configuration - checking for dependencies...")
+
+    # Base library directories including XMP build output locations
+    base_lib_dirs = [
         cache_dir + "/dng_sdk/dng_sdk_1_7_1/xmp/toolkit/public/libraries/linux/Release",
-        cache_dir + "/dng_sdk/dng_sdk_1_7_1/libjpeg",
-    ])
-    libraries.extend([
-        'jxl',
-        'brotli',
-        'highway',
-        'XMPCoreStatic',
-        'XMPFilesStatic',
-        'jpeg'
-    ])
+        cache_dir + "/dng_sdk/dng_sdk_1_7_1/xmp/toolkit/public/libraries/linux",
+        cache_dir + "/libjxl/build/lib",
+        cache_dir + "/libjxl/build/third_party/brotli",
+        cache_dir + "/libjxl/build/third_party/highway",
+    ]
+    library_dirs.extend(base_lib_dirs)
+
+    # Search for XMP Core and XMP Files libraries
+    xmp_libs_dir = cache_dir + "/dng_sdk/dng_sdk_1_7_1/xmp/toolkit/public/libraries/linux/Release"
+    xmp_core_lib = None
+    xmp_files_lib = None
+
+    xmp_search_locations = [
+        xmp_libs_dir,
+        cache_dir + "/dng_sdk/dng_sdk_1_7_1/xmp/toolkit/public/libraries/linux",
+    ]
+
+    xmp_core_patterns = ['XMPCoreStatic', 'XMPCore', 'libXMPCoreStatic']
+    xmp_files_patterns = ['XMPFilesStatic', 'XMPFiles', 'libXMPFilesStatic']
+
+    for search_dir in xmp_search_locations:
+        if not os.path.exists(search_dir):
+            continue
+
+        if not xmp_core_lib:
+            for lib_name in xmp_core_patterns:
+                for lib_path in [f"{search_dir}/lib{lib_name}.a", f"{search_dir}/{lib_name}.a"]:
+                    if os.path.exists(lib_path):
+                        xmp_core_lib = lib_name.replace('lib', '') if lib_name.startswith('lib') else lib_name
+                        print(f"  Found XMP Core library: {lib_path}")
+                        break
+                if xmp_core_lib:
+                    break
+
+        if not xmp_files_lib:
+            for lib_name in xmp_files_patterns:
+                for lib_path in [f"{search_dir}/lib{lib_name}.a", f"{search_dir}/{lib_name}.a"]:
+                    if os.path.exists(lib_path):
+                        xmp_files_lib = lib_name.replace('lib', '') if lib_name.startswith('lib') else lib_name
+                        print(f"  Found XMP Files library: {lib_path}")
+                        break
+                if xmp_files_lib:
+                    break
+
+    if not xmp_core_lib:
+        print("  ERROR: XMP Core library not found for Linux")
+        raise RuntimeError("XMP Core library is required but not found - cannot build C++ extension")
+
+    if not xmp_files_lib:
+        print("  ERROR: XMP Files library not found for Linux")
+        raise RuntimeError("XMP Files library is required but not found - cannot build C++ extension")
+
+    libraries.extend([xmp_core_lib, xmp_files_lib])
+    print(f"  ✓ Using required XMP libraries: {xmp_core_lib}, {xmp_files_lib}")
+
     extra_compile_args.extend([
         '-std=c++17', '-DqDNGValidateTarget=1',
-        '-DqDNGUseLibJPEG=1', '-DqDNGUseXMP=1', '-DqDNGThreadSafe=1', '-DqLinuxOS=1'
+        '-DqDNGUseLibJPEG=1', '-DqDNGUseXMP=1', '-DqDNGThreadSafe=1', '-DqLinux=1', '-DqLinuxOS=1', '-DUNIX_ENV=1', '-DXMP_StaticBuild=1'
+    ])
+
+    extra_link_args.extend([
+        cache_dir + "/libjxl/build/lib/libjxl.a",
+        cache_dir + "/libjxl/build/lib/libjxl_threads.a",
+        cache_dir + "/libjxl/build/lib/libjxl_cms.a",
+        cache_dir + "/libjxl/build/third_party/brotli/libbrotlidec.a",
+        cache_dir + "/libjxl/build/third_party/brotli/libbrotlienc.a",
+        cache_dir + "/libjxl/build/third_party/brotli/libbrotlicommon.a",
+        cache_dir + "/libjxl/build/third_party/highway/libhwy.a",
     ])
 
 else:

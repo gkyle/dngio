@@ -6,8 +6,14 @@ The C++ extension is pre-built by CIBW_BEFORE_BUILD_WINDOWS.
 """
 
 from setuptools import setup, find_packages
+from setuptools.dist import Distribution
 from pathlib import Path
 import glob
+
+class BinaryDistribution(Distribution):
+    """Force platform-specific wheel tag since C++ extension binaries are included."""
+    def has_ext_modules(self):
+        return True
 
 # Read the contents of README file
 this_directory = Path(__file__).parent
@@ -21,11 +27,7 @@ if src_dngio_path.exists():
     extension_files.extend(glob.glob(str(src_dngio_path / "*.so")))
     extension_files.extend(glob.glob(str(src_dngio_path / "*.dylib")))
 
-# Check if we have extension files (indicating this should be a platform wheel)
-has_extensions = len(extension_files) > 0
-
 print(f"Found extension files: {extension_files}")
-print(f"Building platform wheel: {has_extensions}")
 
 setup(
     name="dngio",
@@ -60,6 +62,5 @@ setup(
     install_requires=[
         "numpy>=1.19.0",
     ],
-    # Force platform wheel if extensions are present
-    has_ext_modules=lambda: has_extensions,
+    distclass=BinaryDistribution,
 )

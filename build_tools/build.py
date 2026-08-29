@@ -69,8 +69,22 @@ def main():
                     print("[WARNING] macOS dependency build failed - this is expected as macOS support is not yet complete")
             else:
                 print("[WARNING] build_dependencies_macos.sh not found")
+        elif sys.platform.startswith("linux"):
+            deps_script = build_tools_dir / "build_dependencies_linux.sh"
+            if deps_script.exists():
+                print("[STEP 1] Building dependencies (Linux)...")
+                success = run_command(
+                    ["bash", str(deps_script)],
+                    "Building external dependencies (Linux)",
+                    cwd=build_tools_dir
+                )
+                if not success:
+                    print("[ERROR] Linux dependency build failed. Cannot continue.")
+                    return False
+            else:
+                print("[WARNING] build_dependencies_linux.sh not found")
         else:
-            print("[WARNING] Dependency building for Linux not implemented yet.")
+            print(f"[WARNING] Dependency building for platform {sys.platform} not implemented yet.")
         print("   Please ensure all dependencies are available.")
     
     # Step 2: Build the Python extension

@@ -4,3 +4,7 @@ dist
 __pycache__
 *.egg-info
 wheels
+*.so
+*.pyd
+*.dylib
+

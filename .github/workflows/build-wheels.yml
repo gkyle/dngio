@@ -14,7 +14,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2022, macos-latest]
+        os: [windows-2022, macos-latest, ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +35,10 @@ jobs:
           CIBW_SKIP: "*-win32"
           CIBW_ARCHS_WINDOWS: "AMD64 ARM64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_ARCHS_LINUX: "x86_64"
           CIBW_BEFORE_BUILD_WINDOWS: "cd build_tools && powershell -ExecutionPolicy Bypass -File build_dependencies.ps1 && pip install pybind11 numpy setuptools && python setup.py build_ext --inplace && copy *.pyd ..\\src\\dngio\\ || cp *.so ../src/dngio/ || true"
           CIBW_BEFORE_BUILD_MACOS: "pip install pybind11 numpy setuptools && cd build_tools && chmod +x build_dependencies_macos.sh && echo 'Starting macOS dependency build...' && bash build_dependencies_macos.sh && echo 'Checking built libraries...' && find .cache -name '*.a' | head -10 && echo 'Starting extension build...' && python setup.py build_ext --inplace && echo 'Extension built, checking output files...' && ls -la *_dngio_impl* 2>/dev/null || echo 'No extension files found' && echo 'Copying to src...' && cp *_dngio_impl*.so ../src/dngio/ 2>/dev/null || cp *_dngio_impl*.dylib ../src/dngio/ 2>/dev/null || echo 'Copy completed (no files to copy)'"
+          CIBW_BEFORE_BUILD_LINUX: "pip install pybind11 numpy setuptools && cd build_tools && chmod +x build_dependencies_linux.sh && bash build_dependencies_linux.sh && python setup.py build_ext --inplace && cp *_dngio_impl*.so ../src/dngio/ 2>/dev/null || echo 'Copy completed'"
           CIBW_BUILD_VERBOSITY: 1
         run: |
           python -m cibuildwheel --output-dir wheelhouse

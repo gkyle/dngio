@@ -13,7 +13,7 @@ This is specifically designed for performing mutations on raw sensor data, then 
 |----------|--------------|--------|
 | Windows  | AMD64/ARM64        | ✅ Supported |
 | macOS    | x86_64/ARM64 | ✅ Supported |
-| Linux    | x86_64       | ⏳ Not yet |
+| Linux    | x86_64       | ✅ Supported |
 
 ## Installation
 
