@@ -32,65 +32,36 @@ if os.path.exists(dng_memory_h):
     with open(dng_memory_h, "r") as f:
         dng_mem_content = f.read()
 
-    old_allocator_def = """template <typename T>
-class dng_std_allocator
-	{
-	
-	public:
-
-		typedef T value_type;
-		
-		#if defined(_MSC_VER) && _MSC_VER >= 1900
-
-		// Default implementations of default constructor and copy
-		// constructor.
-
-		dng_std_allocator () = default;
-
-		// dng_std_allocator (const dng_std_allocator &) = default;
-
-		template<class U> dng_std_allocator (const dng_std_allocator<U> &) {}
-		
-		#endif"""
-
-    new_allocator_def = """template <typename T>
-class dng_std_allocator
-	{
-	
-	public:
-
-		typedef T value_type;
-		typedef T* pointer;
-		typedef const T* const_pointer;
-		typedef T& reference;
-		typedef const T& const_reference;
-		typedef std::size_t size_type;
-		typedef std::ptrdiff_t difference_type;
-
-		template<class U> struct rebind { typedef dng_std_allocator<U> other; };
-
-		// Default implementations of default constructor and copy
-		// constructor.
-
-		dng_std_allocator () = default;
-
-		template<class U> dng_std_allocator (const dng_std_allocator<U> &) {}"""
-
-    if old_allocator_def in dng_mem_content:
-        print("Patching dng_memory.h for GCC/Clang C++ allocator compatibility...")
-        dng_mem_content = dng_mem_content.replace(old_allocator_def, new_allocator_def)
-        with open(dng_memory_h, "w") as f:
-            f.write(dng_mem_content)
-        print("✓ dng_memory.h successfully patched")
-    elif "#if defined(_MSC_VER) && _MSC_VER >= 1900" in dng_mem_content:
-        print("Patching dng_memory.h (fallback) for GCC/Clang compatibility...")
-        dng_mem_content = dng_mem_content.replace(
-            "#if defined(_MSC_VER) && _MSC_VER >= 1900",
-            "// #if defined(_MSC_VER) && _MSC_VER >= 1900"
+    if "typedef std::size_t size_type;" not in dng_mem_content:
+        old_block = (
+            "#if defined(_MSC_VER) && _MSC_VER >= 1900\n\n"
+            "\t\t// Default implementations of default constructor and copy\n"
+            "\t\t// constructor.\n\n"
+            "\t\tdng_std_allocator () = default;\n\n"
+            "\t\t// dng_std_allocator (const dng_std_allocator &) = default;\n\n"
+            "\t\ttemplate<class U> dng_std_allocator (const dng_std_allocator<U> &) {}\n"
+            "\t\t\n"
+            "\t\t#endif"
         )
-        with open(dng_memory_h, "w") as f:
-            f.write(dng_mem_content)
-        print("✓ dng_memory.h fallback patch applied")
+        new_block = (
+            "\ttypedef T* pointer;\n"
+            "\t\ttypedef const T* const_pointer;\n"
+            "\t\ttypedef T& reference;\n"
+            "\t\ttypedef const T& const_reference;\n"
+            "\t\ttypedef std::size_t size_type;\n"
+            "\t\ttypedef std::ptrdiff_t difference_type;\n\n"
+            "\t\ttemplate<class U> struct rebind { typedef dng_std_allocator<U> other; };\n\n"
+            "\t\t// Default implementations of default constructor and copy\n"
+            "\t\t// constructor.\n\n"
+            "\t\tdng_std_allocator () = default;\n\n"
+            "\t\ttemplate<class U> dng_std_allocator (const dng_std_allocator<U> &) {}"
+        )
+        if old_block in dng_mem_content:
+            print("Patching dng_memory.h for GCC/Clang C++ allocator compatibility...")
+            dng_mem_content = dng_mem_content.replace(old_block, new_block)
+            with open(dng_memory_h, "w") as f:
+                f.write(dng_mem_content)
+            print("✓ dng_memory.h successfully patched")
 
 # Get libjpeg source files from DNG SDK
 libjpeg_source_dir = cache_dir + "/dng_sdk/dng_sdk_1_7_1/libjpeg/"

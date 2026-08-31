@@ -34,14 +34,14 @@ import os
 path = '$DNG_MEMORY_H'
 with open(path, 'r') as f:
     c = f.read()
-old_str = '#if defined(_MSC_VER) && _MSC_VER >= 1900'
-if old_str in c:
-    c = c.replace(old_str, '// #if defined(_MSC_VER) && _MSC_VER >= 1900')
-    if 'typedef std::size_t size_type;' not in c:
-        c = c.replace('typedef T value_type;', 'typedef T value_type;\n\ttypedef T* pointer;\n\ttypedef const T* const_pointer;\n\ttypedef T& reference;\n\ttypedef const T& const_reference;\n\ttypedef std::size_t size_type;\n\ttypedef std::ptrdiff_t difference_type;\n\ttemplate<class U> struct rebind { typedef dng_std_allocator<U> other; };')
-    with open(path, 'w') as f:
-        f.write(c)
-    print('✓ dng_memory.h patched for GCC/Clang C++ allocator compatibility')
+if 'typedef std::size_t size_type;' not in c:
+    old_block = '#if defined(_MSC_VER) && _MSC_VER >= 1900\n\n\t\t// Default implementations of default constructor and copy\n\t\t// constructor.\n\n\t\tdng_std_allocator () = default;\n\n\t\t// dng_std_allocator (const dng_std_allocator &) = default;\n\n\t\ttemplate<class U> dng_std_allocator (const dng_std_allocator<U> &) {}\n\t\t\n\t\t#endif'
+    new_block = '\ttypedef T* pointer;\n\ttypedef const T* const_pointer;\n\ttypedef T& reference;\n\ttypedef const T& const_reference;\n\ttypedef std::size_t size_type;\n\ttypedef std::ptrdiff_t difference_type;\n\n\ttemplate<class U> struct rebind { typedef dng_std_allocator<U> other; };\n\n\t\t// Default implementations of default constructor and copy\n\t\t// constructor.\n\n\t\tdng_std_allocator () = default;\n\n\ttemplate<class U> dng_std_allocator (const dng_std_allocator<U> &) {}'
+    if old_block in c:
+        c = c.replace(old_block, new_block)
+        with open(path, 'w') as f:
+            f.write(c)
+        print('✓ dng_memory.h patched for GCC/Clang C++ allocator compatibility')
 " || true
 fi
 
