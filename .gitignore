@@ -4,6 +4,7 @@ dist
 __pycache__
 *.egg-info
 wheels
+wheelhouse/
 *.so
 *.pyd
 *.dylib
